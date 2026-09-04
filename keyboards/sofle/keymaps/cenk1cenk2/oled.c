@@ -51,8 +51,8 @@ static void print_status_mods(uint8_t line) {
     oled_set_cursor(0, line);
     oled_write_char('S', mods & MOD_MASK_SHIFT);
     oled_write_char('C', mods & MOD_MASK_CTRL);
-    oled_write_char('A', mods & MOD_MASK_ALT);
     oled_write_char('G', mods & MOD_MASK_GUI);
+    oled_write_char('A', mods & MOD_MASK_ALT);
     oled_write_char(' ', false);
     fill_line_tail(line, false);
 }
@@ -60,10 +60,11 @@ static void print_status_mods(uint8_t line) {
 static void print_status_narrow(void) {
     const uint8_t layer = get_highest_layer(layer_state);
 
-    print_status_line(LINE_QWERTY, PSTR("BASE "), layer == _QWERTY);
-    print_status_line(LINE_LOWER, PSTR("LOWR  "), layer == _LOWER);
-    print_status_line(LINE_RAISE, PSTR("RAIS "), layer == _RAISE);
-    print_status_line(LINE_ADJUST, PSTR("ADJS "), layer == _ADJUST);
+    // Exactly STATUS_COLS characters each, so the highlight spans the full line.
+    print_status_line(LINE_QWERTY, PSTR("QWERT"), layer == _QWERTY);
+    print_status_line(LINE_LOWER, PSTR("LOWER"), layer == _LOWER);
+    print_status_line(LINE_RAISE, PSTR("RAISE"), layer == _RAISE);
+    print_status_line(LINE_ADJUST, PSTR("ADJST"), layer == _ADJUST);
 
     print_status_mods(LINE_MODS);
 
