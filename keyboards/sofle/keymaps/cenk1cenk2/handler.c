@@ -52,25 +52,34 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
 
 #else
 
-// Ring position to column, counted from the outer edge: 0 outer, 1 middle,
-// 2 inner. Indices 0-2 run along the top from outer to inner and 3-5 back along
-// the bottom, so the far side of the ring folds onto the same three columns.
-// The chain already mirrors between halves, so this holds for both.
-#define UG_COLUMNS 3
-#define UG_COLUMN(pos) ((pos) < UG_COLUMNS ? (pos) : (UNDERGLOW_LAST - (pos)))
+// How far each rear LED sits from the thumb that holds the layer key, so the
+// light spreads away from the hand: index 3 is directly under it, then one above
+// and one alongside, then the next pair, then the far edge. The chain mirrors
+// between halves, so this holds for both.
+#define UG_STAGES 4
+static const uint8_t ug_stage[] = {3, 2, 1, 0, 1, 2};
 
-// One step every 128ms, off the frame timestamp. g_rgb_timer is stamped from
-// sync_timer_read32(), which the master pushes to the peripheral, so both halves
-// count the same steps without anything extra on the transport. Four phases: the
-// ring grows a column at a time and holds full for one before restarting.
-#define UG_PHASES 4
-#define UG_STEP ((uint8_t)((g_rgb_timer >> 7) % UG_PHASES))
+// One stage every 128ms. g_rgb_timer is stamped from sync_timer_read32(), which
+// the master pushes to the peripheral, so both halves run the sweep together.
+#define UG_STAGE_MS 128
 
 bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
     const uint8_t layer = get_highest_layer(layer_state);
     const uint8_t val   = rgb_matrix_get_val();
-    const uint8_t step  = UG_STEP;
-    const uint8_t grown = step < UG_COLUMNS ? step : UG_COLUMNS - 1;
+
+    // The sweep runs once on entering a layer and then holds. Tracked here
+    // rather than in layer_state_set_user because the peripheral receives
+    // layer_state through the split transport without that hook firing.
+    static uint8_t  shown_layer = 0;
+    static uint32_t entered_at  = 0;
+
+    if (layer != shown_layer) {
+        shown_layer = layer;
+        entered_at  = g_rgb_timer;
+    }
+
+    const uint32_t elapsed = g_rgb_timer - entered_at;
+    const uint8_t  stage   = elapsed / UG_STAGE_MS >= UG_STAGES ? UG_STAGES : (uint8_t)(elapsed / UG_STAGE_MS);
 
     hsv_t hsv;
 
@@ -99,17 +108,13 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
             continue;
         }
 
-        bool lit = true;
-
-        if (layer != _QWERTY) {
-            // Grows outward from the inner edge, which is where the thumbs hold
-            // the layer key. Colour alone separates the layers.
-            lit = UG_COLUMN(on_side) >= (UG_COLUMNS - 1) - grown;
-        }
+        // Reached once the sweep has spread this far; afterwards every LED holds
+        // at the keyboard's own brightness. Colour alone separates the layers.
+        const bool lit = ug_stage[on_side] <= stage;
 
         // Track the user's brightness the way RGBLIGHT_LAYERS_RETAIN_VAL did.
-        // Ungrown columns sit at a quarter, which the CIE curve turns into a
-        // faint tint rather than a second brightness level.
+        // LEDs the sweep has not reached sit at a quarter, which the CIE curve
+        // turns into a faint tint rather than a second brightness level.
         hsv.v = lit ? val : val / 4;
 
         const rgb_t rgb = hsv_to_rgb(hsv);
