@@ -36,17 +36,17 @@ tasks:
     cmds:
       # qmk clone runs git clone --recurse-submodules --branch=<ref>, and git
       # accepts a tag there. QMK publishes no GitHub releases, only version tags.
+      # It refuses a non-empty destination, so a tag bump discards the tree and
+      # starts clean rather than moving an existing one.
       - |
+        case "{{.QMK_HOME}}" in
+          */.qmk) ;;
+          *) echo "Refusing to remove {{.QMK_HOME}}" >&2; exit 1 ;;
+        esac
         ref="$(task --silent qmk:ref)"
-        if [ -d "{{.QMK_HOME}}/.git" ]; then
-          echo "Updating QMK to ${ref}"
-          git -C {{.QMK_HOME}} fetch --tags origin
-          git -C {{.QMK_HOME}} checkout "${ref}"
-          git -C {{.QMK_HOME}} submodule update --init --recursive
-        else
-          echo "Cloning QMK ${ref}"
-          qmk clone {{.QMK_FORK}} {{.QMK_HOME}} -b "${ref}"
-        fi
+        rm -rf "{{.QMK_HOME}}"
+        echo "Cloning QMK ${ref}"
+        qmk clone {{.QMK_FORK}} {{.QMK_HOME}} -b "${ref}"
 
   qmk:ref:
     desc: Print the latest tagged QMK release.
