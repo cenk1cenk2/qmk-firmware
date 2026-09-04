@@ -59,14 +59,18 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
 #define UG_COLUMNS 3
 #define UG_COLUMN(pos) ((pos) < UG_COLUMNS ? (pos) : (UNDERGLOW_LAST - (pos)))
 
-// One step every 256ms, off the frame timestamp. g_rgb_timer is stamped from
+// One step every 128ms, off the frame timestamp. g_rgb_timer is stamped from
 // sync_timer_read32(), which the master pushes to the peripheral, so both halves
-// count the same steps without anything extra on the transport.
-#define UG_STEP ((uint8_t)((g_rgb_timer >> 8) % UG_COLUMNS))
+// count the same steps without anything extra on the transport. Four phases: the
+// ring grows a column at a time and holds full for one before restarting.
+#define UG_PHASES 4
+#define UG_STEP ((uint8_t)((g_rgb_timer >> 7) % UG_PHASES))
 
 bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
     const uint8_t layer = get_highest_layer(layer_state);
     const uint8_t val   = rgb_matrix_get_val();
+    const uint8_t step  = UG_STEP;
+    const uint8_t grown = step < UG_COLUMNS ? step : UG_COLUMNS - 1;
 
     hsv_t hsv;
 
@@ -97,9 +101,9 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
         switch (layer) {
             case _LOWER:
             case _RAISE:
-                // A single column rippling out from the inner edge, which is
-                // where the thumbs hold the layer key.
-                lit = UG_COLUMN(on_side) == (UG_COLUMNS - 1) - UG_STEP;
+                // Grows outward from the inner edge, which is where the thumbs
+                // hold the layer key.
+                lit = UG_COLUMN(on_side) >= (UG_COLUMNS - 1) - grown;
                 break;
             case _ADJUST:
                 // Whole ring pulsing rather than travelling, so the layer that
