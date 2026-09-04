@@ -25,7 +25,7 @@ KC_TRNS,            KC_F9,                KC_F10,               KC_F11,         
                     KC_TRNS,              KC_TRNS,              KC_TRNS,            KC_TRNS,             KC_TRNS,                                                       KC_TRNS,             KC_TRNS,            KC_TRNS,              KC_TRNS,            KC_TRNS
 ),
 [_ADJUST] = LAYOUT(
-KC_NO,              KC_NO,                KC_NO,                KC_NO,              KC_NO,               KC_NO,                                                         KC_NO,               KC_NO,              KC_NO,                KC_NO,              KC_NO,               KC_NO,
+EE_CLR,             KC_NO,                KC_NO,                KC_NO,              KC_NO,               KC_NO,                                                         KC_NO,               KC_NO,              KC_NO,                KC_NO,              KC_NO,               KC_NO,
 KC_NO,              KC_INS,               KC_SCRL,              KC_NO,              UG_TOGG,             KC_NO,                                                         KC_BRIU,             KC_VOLD,            KC_MUTE,              KC_VOLU,            KC_NO,               KC_NO,
 KC_CAPS,            UG_HUEU,              UG_SATU,              UG_VALU,            KC_MNXT,             KC_NO,                                                         KC_BRID,             KC_MPRV,            KC_MPLY,              KC_MNXT,            KC_NO,               KC_NO,
 KC_NO,              UG_HUED,              UG_SATD,              UG_VALD,            KC_MPRV,             KC_NO,               KC_TRNS,             KC_TRNS,             KC_NO,               KC_NO,              KC_NO,                KC_NO,              KC_NO,               KC_NO,
