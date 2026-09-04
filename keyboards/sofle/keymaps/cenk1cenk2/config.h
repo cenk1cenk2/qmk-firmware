@@ -24,6 +24,9 @@
 #ifdef OLED_ENABLE
 #    define OLED_TIMEOUT 60000
 #    define SPLIT_OLED_ENABLE
+
+// Words per minute on the status screen. Needs WPM_ENABLE = yes in rules.mk.
+#    define STATUS_SHOW_WPM 1
 #endif
 
 #ifdef RGB_MATRIX_ENABLE

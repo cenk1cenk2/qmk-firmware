@@ -27,6 +27,12 @@ static void render_logo(void) {
 #    define LINE_ADJUST 4
 #    define LINE_MODS 6
 #    define LINE_CAPS 8
+#    define LINE_WPM 11
+#    define LINE_WPM_VALUE 12
+#    define LINE_WPM_BAR 13
+
+// Full bar at this many words per minute.
+#    define WPM_BAR_MAX 120
 
 // The glyph padding oled_write_ln adds is always drawn uninverted, so a
 // highlighted line would stop at the end of its text. Every label below is
@@ -57,6 +63,36 @@ static void print_status_mods(uint8_t line) {
     fill_line_tail(line, false);
 }
 
+#if STATUS_SHOW_WPM
+#    if !defined(WPM_ENABLE)
+#        error "STATUS_SHOW_WPM needs WPM_ENABLE = yes in rules.mk"
+#    endif
+
+// Middle rows only, so the gauge reads as a bar rather than filling the line.
+#    define BAR_TOP 2
+#    define BAR_BOTTOM (OLED_FONT_HEIGHT - 2)
+
+static void print_status_wpm(uint8_t label_line, uint8_t value_line, uint8_t bar_line) {
+    const uint8_t wpm = get_current_wpm();
+
+    print_status_line(label_line, PSTR("WPM  "), false);
+
+    oled_set_cursor(0, value_line);
+    oled_write_char(' ', false);
+    oled_write(get_u8_str(wpm, ' '), false);
+    oled_write_char(' ', false);
+    fill_line_tail(value_line, false);
+
+    const uint8_t filled = wpm >= WPM_BAR_MAX ? OLED_DISPLAY_HEIGHT : ((uint16_t)wpm * OLED_DISPLAY_HEIGHT) / WPM_BAR_MAX;
+
+    for (uint8_t x = 0; x < OLED_DISPLAY_HEIGHT; x++) {
+        for (uint8_t y = BAR_TOP; y < BAR_BOTTOM; y++) {
+            oled_write_pixel(x, (bar_line * OLED_FONT_HEIGHT) + y, x < filled);
+        }
+    }
+}
+#endif
+
 static void print_status_narrow(void) {
     const uint8_t layer = get_highest_layer(layer_state);
 
@@ -70,6 +106,10 @@ static void print_status_narrow(void) {
 
     led_t led_usb_state = host_keyboard_led_state();
     print_status_line(LINE_CAPS, PSTR("CAPS "), led_usb_state.caps_lock);
+
+#if STATUS_SHOW_WPM
+    print_status_wpm(LINE_WPM, LINE_WPM_VALUE, LINE_WPM_BAR);
+#endif
 }
 
 oled_rotation_t oled_init_user(oled_rotation_t rotation) {
