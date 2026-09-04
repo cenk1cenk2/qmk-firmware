@@ -9,7 +9,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 QK_GESC,            KC_1,                 KC_2,                 KC_3,               KC_4,                KC_5,                                                          KC_6,                KC_7,               KC_8,                 KC_9,               KC_0,               KC_MINS,
 KC_TAB,             KC_Q,                 KC_W,                 KC_E,               KC_R,                KC_T,                                                          KC_Y,                KC_U,               KC_I,                 KC_O,               KC_P,               KC_BSPC,
 KC_LCTL,            KC_A,                 KC_S,                 KC_D,               KC_F,                KC_G,                                                          KC_H,                KC_J,               KC_K,                 KC_L,               KC_SCLN,            KC_QUOT,
-KC_LSFT,            KC_Z,                 KC_X,                 KC_C,               KC_V,                KC_B,                KC_MUTE,             RGB_TOG,             KC_N,                KC_M,               KC_COMM,              KC_DOT,             KC_SLSH,            KC_RSFT,
+KC_LSFT,            KC_Z,                 KC_X,                 KC_C,               KC_V,                KC_B,                KC_MUTE,             UG_TOGG,             KC_N,                KC_M,               KC_COMM,              KC_DOT,             KC_SLSH,            KC_RSFT,
                     KC_LALT,              KC_LCTL,              KC_LGUI,            MO(_LOWER),          KC_ENT,                                                        KC_SPC,              MO(_RAISE),         KC_RALT,              KC_RCTL,            KC_RGUI
 ),
 [_LOWER]  = LAYOUT(
@@ -28,9 +28,9 @@ KC_TRNS,            KC_F9,                KC_F10,               KC_F11,         
 ),
 [_ADJUST] = LAYOUT(
 QK_REBOOT,          KC_NO,                KC_NO,                KC_NO,              KC_NO,               KC_NO,                                                         KC_NO,               KC_NO,              KC_NO,                KC_NO,              KC_NO,               KC_NO,
-KC_NO,              KC_INS,               KC_SCRL,              BL_TOGG,            RGB_TOG,             KC_NO,                                                         KC_BRIU,             KC_VOLD,            KC_MUTE,              KC_VOLU,            KC_NO,               KC_NO,
-KC_CAPS,            RGB_HUI,              RGB_SAI,              RGB_VAI,            RGB_MOD,             CG_SWAP,                                                       KC_BRID,             KC_MPRV,            KC_MPLY,              KC_MNXT,            KC_NO,               KC_NO,
-KC_NO,              RGB_HUD,              RGB_SAD,              RGB_VAD,            RGB_RMOD,            CG_NORM,             KC_TRNS,             KC_TRNS,             KC_NO,               KC_NO,              KC_NO,                KC_NO,              KC_NO,               KC_NO,
+KC_NO,              KC_INS,               KC_SCRL,              BL_TOGG,            UG_TOGG,             KC_NO,                                                         KC_BRIU,             KC_VOLD,            KC_MUTE,              KC_VOLU,            KC_NO,               KC_NO,
+KC_CAPS,            UG_HUEU,              UG_SATU,              UG_VALU,            UG_NEXT,             CG_SWAP,                                                       KC_BRID,             KC_MPRV,            KC_MPLY,              KC_MNXT,            KC_NO,               KC_NO,
+KC_NO,              UG_HUED,              UG_SATD,              UG_VALD,            UG_PREV,             CG_NORM,             KC_TRNS,             KC_TRNS,             KC_NO,               KC_NO,              KC_NO,                KC_NO,              KC_NO,               KC_NO,
                     KC_TRNS,              KC_TRNS,              KC_TRNS,            KC_TRNS,             KC_TRNS,                                                       KC_TRNS,             KC_TRNS,            KC_TRNS,              KC_TRNS,            KC_TRNS
 )
 //                  |                    |                    |                    |                    |                    |                    |                    |                    |                    |                    |                    |                    |
