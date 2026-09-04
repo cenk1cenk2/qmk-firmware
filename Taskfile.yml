@@ -6,8 +6,13 @@ version: "3"
 vars:
   REPO: cenk1cenk2/qmk-firmware
   DIST: dist
+  # The pip qmk package only ships clone/console/env/setup; compile and flash
+  # live inside a qmk_firmware checkout and appear once QMK_HOME points at one.
+  QMK_HOME:
+    sh: echo "${QMK_HOME:-$HOME/development/qmk_firmware}"
 
-env: {}
+env:
+  QMK_HOME: "{{.QMK_HOME}}"
 
 tasks:
   install:
@@ -15,6 +20,8 @@ tasks:
     cmds:
       - yay -S avr-gcc avr-glibc avrdude qmk-udev-rules-git
       - uv sync
+      - git -C {{.QMK_HOME}} submodule update --init --recursive
+      - qmk config user.qmk_home="{{.QMK_HOME}}"
       - qmk config user.overlay_dir="$(pwd)"
 
   clean:
@@ -26,24 +33,36 @@ tasks:
     desc: Compile sofle/rev1 with the cenk1cenk2 keymap.
     cmds:
       - task: compile
-        vars: {KEYBOARD: sofle, REVISION: rev1, KEYMAP: cenk1cenk2}
+        vars:
+          KEYBOARD: sofle
+          REVISION: rev1
+          KEYMAP: cenk1cenk2
 
   download:sofle:rev1:cenk1cenk2:
     desc: Download the latest CI build of sofle/rev1 cenk1cenk2.
     cmds:
       - task: download
-        vars: {KEYBOARD: sofle, REVISION: rev1, KEYMAP: cenk1cenk2}
+        vars:
+          KEYBOARD: sofle
+          REVISION: rev1
+          KEYMAP: cenk1cenk2
 
   flash:sofle:rev1:cenk1cenk2:
     desc: Flash sofle/rev1 cenk1cenk2. Run once per half, resetting that half when prompted.
     cmds:
       - task: flash
-        vars: {KEYBOARD: sofle, REVISION: rev1, KEYMAP: cenk1cenk2}
+        vars:
+          KEYBOARD: sofle
+          REVISION: rev1
+          KEYMAP: cenk1cenk2
 
   compile:
     internal: true
     requires:
-      vars: [KEYBOARD, REVISION, KEYMAP]
+      vars:
+        - KEYBOARD
+        - REVISION
+        - KEYMAP
     vars:
       FIRMWARE: "{{.KEYBOARD}}_{{.REVISION}}_{{.KEYMAP}}.hex"
     cmds:
@@ -55,7 +74,10 @@ tasks:
   download:
     internal: true
     requires:
-      vars: [KEYBOARD, REVISION, KEYMAP]
+      vars:
+        - KEYBOARD
+        - REVISION
+        - KEYMAP
     vars:
       FIRMWARE: "{{.KEYBOARD}}_{{.REVISION}}_{{.KEYMAP}}.hex"
     cmds:
@@ -65,7 +87,10 @@ tasks:
   flash:
     internal: true
     requires:
-      vars: [KEYBOARD, REVISION, KEYMAP]
+      vars:
+        - KEYBOARD
+        - REVISION
+        - KEYMAP
     vars:
       FIRMWARE: "{{.KEYBOARD}}_{{.REVISION}}_{{.KEYMAP}}.hex"
     preconditions:
