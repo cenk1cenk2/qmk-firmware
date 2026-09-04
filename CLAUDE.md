@@ -49,6 +49,15 @@ dist/                                 built and downloaded firmware, gitignored
   one wraps onto the next line and corrupts it. `fill_line_tail` drives the 2px
   remainder directly. `oled_advance_page` rounds that remainder down to zero
   glyphs, so a trailing `\n` after a 5-character string does nothing at all.
+- **The six rear underglow LEDs are interspersed among the per-key LEDs**,
+  roughly three across the top and three across the bottom, rather than forming a
+  ring at the edge. Patterns read as two rows spreading sideways.
+- **WS2812 green carries roughly twice the perceived weight per unit as red**, so
+  any hue with a substantial green channel skews green. `HSV_ORANGE` (21) is
+  R150 G74 and reads yellow-green; hue 11 is R150 G39 and reads orange.
+- **RGB Matrix applies a CIE curve** (`USE_CIE1931_CURVE`), so brightness is far
+  from linear. At `val` 150 the output is 69/255 PWM; `val` 75 is 16/255 and
+  `val` 37 is 5/255. Half of `val` reads as off rather than as a dimmer shade.
 - **28 KB of flash.** Every feature is weighed against it, and measured by
   building rather than estimated.
 - **A 500 mA polyfuse on the master half feeds both sides** through the TRRS. 72
@@ -83,6 +92,17 @@ dist/                                 built and downloaded firmware, gitignored
   that; it does not touch `EE_HANDS` handedness, which lives outside eeconfig.
 - Writing to `/dev/ttyACM*` needs the QMK udev rules, which grant access via
   `TAG+="uaccess"` rather than a group. `task udev` installs them.
+- The peripheral receives `layer_state` through the split transport without
+  `layer_state_set_user` firing on it. Anything timed on layer entry has to detect
+  the change in the render hook, or it animates on the master only.
+- `g_rgb_timer` is the frame timestamp, stamped from `sync_timer_read32()`, which
+  the master pushes to the peripheral every 100 ms. Both halves therefore count
+  the same time with nothing added to the transport. `rgb_matrix_get_tick()` does
+  not exist.
+- Encoder clicks are ordinary matrix keys on the base layer. `ENCODER_MAP_ENABLE`
+  replaces rotation handling only and leaves them alone.
+- `UNDERGLOW_PROBE` in `handler.c` paints each rear LED a distinct hue, for
+  identifying chain positions against the hardware.
 
 ## Tools & MCP Usage
 
