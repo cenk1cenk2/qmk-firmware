@@ -9,8 +9,17 @@ layer_state_t layer_state_set_user(layer_state_t state) {
 
 // The layer colour goes on the six rear underglow LEDs per side. Everything else
 // is left to the active effect, so the forward-facing LED and the per-key LEDs
-// share the base colour. Selecting on the flag rather than an index keeps this
-// correct if the chain ever changes.
+// share the base colour.
+//
+// This selects by index rather than by LED_FLAG_UNDERGLOW because the flags in
+// keyboards/sofle/info.json do not match this board: they place the
+// forward-facing LED first, while on the hardware the chain runs through the six
+// rear LEDs and reaches the forward-facing one at index 6. Trusting the flags lit
+// one front LED and left one rear LED unlit, on both halves.
+#define LEDS_PER_SIDE (RGB_MATRIX_LED_COUNT / 2)
+#define UNDERGLOW_FIRST 0
+#define UNDERGLOW_LAST 5
+
 bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
     hsv_t hsv;
 
@@ -35,7 +44,9 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
     const rgb_t rgb = hsv_to_rgb(hsv);
 
     for (uint8_t i = led_min; i < led_max; i++) {
-        if (g_led_config.flags[i] & LED_FLAG_UNDERGLOW) {
+        const uint8_t on_side = i % LEDS_PER_SIDE;
+
+        if (on_side >= UNDERGLOW_FIRST && on_side <= UNDERGLOW_LAST) {
             rgb_matrix_set_color(i, rgb.r, rgb.g, rgb.b);
         }
     }
