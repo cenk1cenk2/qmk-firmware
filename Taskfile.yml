@@ -3,7 +3,12 @@
 
 version: "3"
 
-vars: {}
+vars:
+  KEYBOARD: sofle
+  REVISION: rev1
+  KEYMAP: cenk1cenk2
+  REPO: cenk1cenk2/qmk-firmware
+  DIST: dist
 
 env: {}
 
@@ -16,11 +21,74 @@ tasks:
       - qmk config user.overlay_dir="$(pwd)"
 
   compile:
-    desc: Compile the keyboard/keymap.
+    desc: Compile the keyboard/keymap into {{.DIST}}.
+    vars:
+      FIRMWARE: "{{.KEYBOARD}}_{{.REVISION}}_{{.KEYMAP}}.hex"
     cmds:
-      - qmk compile -kb sofle -km cenk1cenk2
+      - mkdir -p {{.DIST}}
+      # qmk drops the firmware in the userspace root, per builddefs/common_rules.mk.
+      - qmk compile -kb {{.KEYBOARD}} -km {{.KEYMAP}}
+      - mv {{.FIRMWARE}} {{.DIST}}/{{.FIRMWARE}}
+
+  download:
+    desc: Download the latest CI-built firmware into {{.DIST}}.
+    vars:
+      FIRMWARE: "{{.KEYBOARD}}_{{.REVISION}}_{{.KEYMAP}}.hex"
+    cmds:
+      - mkdir -p {{.DIST}}
+      - gh release download latest -R {{.REPO}} -p "{{.FIRMWARE}}" -D {{.DIST}} --clobber
 
   flash:
-    desc: Flash the keyboard/keymap.
+    desc: Flash the firmware. Run once per half, resetting that half when prompted.
+    vars:
+      FIRMWARE: "{{.KEYBOARD}}_{{.REVISION}}_{{.KEYMAP}}.hex"
+    preconditions:
+      - sh: test -f {{.DIST}}/{{.FIRMWARE}}
+        msg: "{{.DIST}}/{{.FIRMWARE}} not found - run `task download` or `task compile` first."
     cmds:
-      - qmk flash -kb sofle -km cenk1cenk2
+      - qmk flash {{.DIST}}/{{.FIRMWARE}}
+
+  clean:
+    desc: Remove downloaded and compiled firmware.
+    cmds:
+      - rm -rf {{.DIST}}
+
+  # Variants: task compile:sofle:rev1:cenk1cenk2
+  compile:*:*:*:
+    desc: Compile an explicit keyboard:revision:keymap.
+    vars:
+      KEYBOARD: "{{index .MATCH 0}}"
+      REVISION: "{{index .MATCH 1}}"
+      KEYMAP: "{{index .MATCH 2}}"
+    cmds:
+      - task: compile
+        vars:
+          KEYBOARD: "{{.KEYBOARD}}"
+          REVISION: "{{.REVISION}}"
+          KEYMAP: "{{.KEYMAP}}"
+
+  download:*:*:*:
+    desc: Download an explicit keyboard:revision:keymap.
+    vars:
+      KEYBOARD: "{{index .MATCH 0}}"
+      REVISION: "{{index .MATCH 1}}"
+      KEYMAP: "{{index .MATCH 2}}"
+    cmds:
+      - task: download
+        vars:
+          KEYBOARD: "{{.KEYBOARD}}"
+          REVISION: "{{.REVISION}}"
+          KEYMAP: "{{.KEYMAP}}"
+
+  flash:*:*:*:
+    desc: Flash an explicit keyboard:revision:keymap.
+    vars:
+      KEYBOARD: "{{index .MATCH 0}}"
+      REVISION: "{{index .MATCH 1}}"
+      KEYMAP: "{{index .MATCH 2}}"
+    cmds:
+      - task: flash
+        vars:
+          KEYBOARD: "{{.KEYBOARD}}"
+          REVISION: "{{.REVISION}}"
+          KEYMAP: "{{.KEYMAP}}"
