@@ -14,7 +14,6 @@ ENCODER_ENABLE = yes
 NKRO_ENABLE = yes
 
 VIA_ENABLE = no
-WS2812_DRIVER_REQUIRED = yes
 
 SRC +=  ./oled.c \
         ./handler.c

@@ -15,10 +15,13 @@
 #define SPLIT_TRANSPORT_MIRROR
 
 #define NO_ACTION_ONESHOT
+#define LAYER_STATE_8BIT
 
 #define QUICK_TAP_TERM 0
+#define PERMISSIVE_HOLD
 
-#define FORCE_NKRO
+// FORCE_NKRO was removed from QMK; this sets the EEPROM default instead.
+#define NKRO_DEFAULT_ON true
 
 #ifdef OLED_ENABLE
 #    define OLED_TIMEOUT 60000
