@@ -7,12 +7,36 @@ permissions:
   contents: write
 
 jobs:
+  resolve:
+    name: Resolve QMK release
+    runs-on: ubuntu-latest
+    outputs:
+      ref: ${{ steps.qmk.outputs.ref }}
+    steps:
+      # QMK publishes no GitHub releases, only version tags, so the latest
+      # release is the highest X.Y.Z tag. The filter drops the non-version tags.
+      - name: Resolve the latest tagged QMK release
+        id: qmk
+        run: |
+          ref="$(git ls-remote --tags --refs --sort=-v:refname \
+            https://github.com/qmk/qmk_firmware.git \
+            | grep -oE 'refs/tags/[0-9]+\.[0-9]+\.[0-9]+$' \
+            | head -n1 \
+            | cut -d/ -f3)"
+          if [ -z "${ref}" ]; then
+            echo "Could not resolve a QMK release tag" >&2
+            exit 1
+          fi
+          echo "ref=${ref}" >> "$GITHUB_OUTPUT"
+          echo "Building against QMK ${ref}"
+
   build:
     name: QMK Userspace Build
+    needs: resolve
     uses: qmk/.github/.github/workflows/qmk_userspace_build.yml@main
     with:
       qmk_repo: qmk/qmk_firmware
-      qmk_ref: master
+      qmk_ref: ${{ needs.resolve.outputs.ref }}
 
   publish:
     name: QMK Userspace Publish

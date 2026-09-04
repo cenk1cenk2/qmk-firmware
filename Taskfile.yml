@@ -8,8 +8,11 @@ vars:
   DIST: dist
   # The pip qmk package only ships clone/console/env/setup; compile and flash
   # live inside a qmk_firmware checkout and appear once QMK_HOME points at one.
-  QMK_HOME:
-    sh: echo "${QMK_HOME:-$HOME/development/qmk_firmware}"
+  # This is a clean upstream tree of its own so nothing can shadow the keymaps
+  # this repo owns.
+  QMK_HOME: "{{.ROOT_DIR}}/.qmk"
+  QMK_FORK: qmk/qmk_firmware
+  QMK_REPO: https://github.com/qmk/qmk_firmware.git
 
 env:
   QMK_HOME: "{{.QMK_HOME}}"
@@ -18,11 +21,42 @@ tasks:
   install:
     desc: Installs the required dependencies on pull.
     cmds:
-      - yay -S avr-gcc avr-glibc avrdude qmk-udev-rules-git
+      - yay -S --needed avr-gcc avr-libc avrdude
       - uv sync
-      - git -C {{.QMK_HOME}} submodule update --init --recursive
+      - task: qmk:sync
       - qmk config user.qmk_home="{{.QMK_HOME}}"
-      - qmk config user.overlay_dir="$(pwd)"
+      - qmk config user.overlay_dir="{{.ROOT_DIR}}"
+
+  qmk:sync:
+    desc: Put the local QMK tree on the latest tagged release, cloning if absent.
+    # Comparing the checked-out tag rather than mere existence, so a new upstream
+    # release is picked up instead of leaving the tree behind what CI builds.
+    status:
+      - test "$(git -C {{.QMK_HOME}} describe --tags --exact-match 2>/dev/null)" = "$(task --silent qmk:ref)"
+    cmds:
+      # qmk clone runs git clone --recurse-submodules --branch=<ref>, and git
+      # accepts a tag there. QMK publishes no GitHub releases, only version tags.
+      - |
+        ref="$(task --silent qmk:ref)"
+        if [ -d "{{.QMK_HOME}}/.git" ]; then
+          echo "Updating QMK to ${ref}"
+          git -C {{.QMK_HOME}} fetch --tags origin
+          git -C {{.QMK_HOME}} checkout "${ref}"
+          git -C {{.QMK_HOME}} submodule update --init --recursive
+        else
+          echo "Cloning QMK ${ref}"
+          qmk clone {{.QMK_FORK}} {{.QMK_HOME}} -b "${ref}"
+        fi
+
+  qmk:ref:
+    desc: Print the latest tagged QMK release.
+    silent: true
+    cmds:
+      - |
+        git ls-remote --tags --refs --sort=-v:refname {{.QMK_REPO}} \
+          | grep -oE 'refs/tags/[0-9]+\.[0-9]+\.[0-9]+$' \
+          | head -n1 \
+          | cut -d/ -f3
 
   clean:
     desc: Remove downloaded and compiled firmware.
@@ -65,6 +99,10 @@ tasks:
         - KEYMAP
     vars:
       FIRMWARE: "{{.KEYBOARD}}_{{.REVISION}}_{{.KEYMAP}}.hex"
+    deps:
+      # Build against the same release CI resolves, rather than whatever the
+      # tree happened to be left on.
+      - qmk:sync
     cmds:
       - mkdir -p {{.DIST}}
       # qmk drops the firmware in the userspace root, per builddefs/common_rules.mk.
