@@ -79,7 +79,10 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
             hsv = (hsv_t){HSV_YELLOW};
             break;
         case _RAISE:
-            hsv = (hsv_t){HSV_ORANGE};
+            // Not HSV_ORANGE (21): its green channel is half of red, and WS2812
+            // green carries roughly twice the perceived weight per unit, so it
+            // reads yellow-green. This sits at R150 G39 and reads orange.
+            hsv = (hsv_t){11, 255, 0};
             break;
         case _ADJUST:
             hsv = (hsv_t){HSV_RED};
@@ -98,24 +101,17 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
 
         bool lit = true;
 
-        switch (layer) {
-            case _LOWER:
-            case _RAISE:
-                // Grows outward from the inner edge, which is where the thumbs
-                // hold the layer key.
-                lit = UG_COLUMN(on_side) >= (UG_COLUMNS - 1) - grown;
-                break;
-            case _ADJUST:
-                // Whole ring pulsing rather than travelling, so the layer that
-                // carries EE_CLR is different in kind and not just in hue.
-                lit = (g_rgb_timer >> 7) & 1;
-                break;
-            default:
-                break;
+        if (layer != _QWERTY) {
+            // Grows outward from the inner edge, which is where the thumbs hold
+            // the layer key. Colour alone separates the layers.
+            lit = UG_COLUMN(on_side) >= (UG_COLUMNS - 1) - grown;
         }
 
         // Track the user's brightness the way RGBLIGHT_LAYERS_RETAIN_VAL did.
-        hsv.v = lit ? val : val / 2;
+        // Ungrown columns keep two thirds rather than half: RGB Matrix applies a
+        // CIE curve, so half of val lands near a quarter of the light and reads
+        // as off instead of as dim colour.
+        hsv.v = lit ? val : (val * 2) / 3;
 
         const rgb_t rgb = hsv_to_rgb(hsv);
 
