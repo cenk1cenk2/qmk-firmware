@@ -7,9 +7,10 @@ layer_state_t layer_state_set_user(layer_state_t state) {
 
 #ifdef RGB_MATRIX_ENABLE
 
-// Per-side index 0 is the forward-facing indicator and 1-6 the rear underglow;
-// 7-35 are per-key. Selecting on flags rather than index keeps this correct if
-// the chain ever changes.
+// The layer colour goes on the six rear underglow LEDs per side. Everything else
+// is left to the active effect, so the forward-facing LED and the per-key LEDs
+// share the base colour. Selecting on the flag rather than an index keeps this
+// correct if the chain ever changes.
 bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
     hsv_t hsv;
 
@@ -34,7 +35,7 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
     const rgb_t rgb = hsv_to_rgb(hsv);
 
     for (uint8_t i = led_min; i < led_max; i++) {
-        if (g_led_config.flags[i] & (LED_FLAG_UNDERGLOW | LED_FLAG_INDICATOR)) {
+        if (g_led_config.flags[i] & LED_FLAG_UNDERGLOW) {
             rgb_matrix_set_color(i, rgb.r, rgb.g, rgb.b);
         }
     }
