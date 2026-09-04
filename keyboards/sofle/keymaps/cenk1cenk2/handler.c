@@ -108,10 +108,9 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
         }
 
         // Track the user's brightness the way RGBLIGHT_LAYERS_RETAIN_VAL did.
-        // Ungrown columns keep two thirds rather than half: RGB Matrix applies a
-        // CIE curve, so half of val lands near a quarter of the light and reads
-        // as off instead of as dim colour.
-        hsv.v = lit ? val : (val * 2) / 3;
+        // Ungrown columns sit at a quarter, which the CIE curve turns into a
+        // faint tint rather than a second brightness level.
+        hsv.v = lit ? val : val / 4;
 
         const rgb_t rgb = hsv_to_rgb(hsv);
 
