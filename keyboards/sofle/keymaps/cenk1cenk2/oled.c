@@ -43,41 +43,57 @@ static void render_logo(void) {
     oled_write_raw_P(raw_logo, sizeof(raw_logo));
 }
 
-static void print_status_narrow(void) {
-    // Print current mode
-    oled_write_P(PSTR("\n\n"), false);
-    oled_write_ln_P(PSTR("MODE"), false);
-    oled_write_ln_P(PSTR(""), false);
-    if (keymap_config.swap_lctl_lgui) {
-        oled_write_ln_P(PSTR("MAC"), false);
-    } else {
-        oled_write_ln_P(PSTR("WIN"), false);
-    }
+// A rotated line is OLED_DISPLAY_HEIGHT (32px) wide and the font is 6px, so a
+// line holds 5 glyphs and leaves 2px that no glyph can reach. oled_advance_page
+// rounds that remainder down to zero glyphs and leaves the cursor mid-line, so a
+// trailing "\n" after a 5-character string does nothing at all. Place every line
+// explicitly instead of stacking newlines.
+#define STATUS_TEXT_WIDTH ((OLED_DISPLAY_HEIGHT / OLED_FONT_WIDTH) * OLED_FONT_WIDTH)
 
-    oled_write_P(PSTR("\n\n"), false);
-    // Print current layer
-    oled_write_ln_P(PSTR("LAYER"), false);
+#define LINE_MODE 1
+#define LINE_MODE_VALUE 2
+#define LINE_LAYER 5
+#define LINE_LAYER_VALUE 6
+#define LINE_CAPS 9
+
+static void print_status_line(uint8_t line, const char *data, bool invert) {
+    oled_set_cursor(0, line);
+    oled_write_ln_P(data, invert);
+
+    // oled_write_ln_P pads in whole glyphs, so the 2px tail holds whatever the
+    // previous frame left and an inverted line stops short of the edge. Drive
+    // those columns directly.
+    for (uint8_t x = STATUS_TEXT_WIDTH; x < OLED_DISPLAY_HEIGHT; x++) {
+        for (uint8_t y = 0; y < OLED_FONT_HEIGHT; y++) {
+            oled_write_pixel(x, (line * OLED_FONT_HEIGHT) + y, invert);
+        }
+    }
+}
+
+static void print_status_narrow(void) {
+    print_status_line(LINE_MODE, PSTR("MODE"), false);
+    print_status_line(LINE_MODE_VALUE, keymap_config.swap_lctl_lgui ? PSTR("MAC") : PSTR("WIN"), false);
+
+    print_status_line(LINE_LAYER, PSTR("LAYER"), false);
     switch (get_highest_layer(layer_state)) {
         case _QWERTY:
-            oled_write_P(PSTR("Norm\n"), false);
+            print_status_line(LINE_LAYER_VALUE, PSTR("Norm"), false);
             break;
         case _RAISE:
-            oled_write_P(PSTR("Raise"), false);
+            print_status_line(LINE_LAYER_VALUE, PSTR("Raise"), false);
             break;
         case _LOWER:
-            oled_write_P(PSTR("Lower"), false);
+            print_status_line(LINE_LAYER_VALUE, PSTR("Lower"), false);
             break;
         case _ADJUST:
-            oled_write_P(PSTR("Adj\n"), false);
+            print_status_line(LINE_LAYER_VALUE, PSTR("Adj"), false);
             break;
         default:
-            oled_write_ln_P(PSTR("Undef"), false);
+            print_status_line(LINE_LAYER_VALUE, PSTR("Undef"), false);
     }
 
-    oled_write_P(PSTR("\n\n"), false);
     led_t led_usb_state = host_keyboard_led_state();
-    oled_write_ln_P(PSTR("CPSLK\n\n"), led_usb_state.caps_lock);
-    oled_write_P(PSTR("\n\n"), false);
+    print_status_line(LINE_CAPS, PSTR("CAPS"), led_usb_state.caps_lock);
 }
 
 oled_rotation_t oled_init_user(oled_rotation_t rotation) {
