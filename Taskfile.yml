@@ -4,148 +4,149 @@
 version: "3"
 
 vars:
-  REPO: cenk1cenk2/qmk-firmware
-  DIST: dist
-  # The pip qmk package only ships clone/console/env/setup; compile and flash
-  # live inside a qmk_firmware checkout and appear once QMK_HOME points at one.
-  # This is a clean upstream tree of its own so nothing can shadow the keymaps
-  # this repo owns.
-  QMK_HOME: "{{.ROOT_DIR}}/.qmk"
-  QMK_FORK: qmk/qmk_firmware
-  QMK_REPO: https://github.com/qmk/qmk_firmware.git
+    REPO: cenk1cenk2/qmk-firmware
+    DIST: dist
+    # The pip qmk package only ships clone/console/env/setup; compile and flash
+    # live inside a qmk_firmware checkout and appear once QMK_HOME points at one.
+    # This is a clean upstream tree of its own so nothing can shadow the keymaps
+    # this repo owns.
+    QMK_HOME: "{{.ROOT_DIR}}/.qmk"
+    QMK_FORK: qmk/qmk_firmware
+    QMK_REPO: https://github.com/qmk/qmk_firmware.git
 
 env:
-  QMK_HOME: "{{.QMK_HOME}}"
+    QMK_HOME: "{{.QMK_HOME}}"
 
 tasks:
-  install:
-    desc: Installs the required dependencies on pull.
-    cmds:
-      - yay -S --needed avr-gcc avr-libc avrdude
-      - uv sync
-      - task: qmk:sync
-      - task: udev
-      - qmk config user.qmk_home="{{.QMK_HOME}}"
-      - qmk config user.overlay_dir="{{.ROOT_DIR}}"
+    install:
+        desc: Installs the required dependencies on pull.
+        cmds:
+            - yay -S --needed avr-gcc avr-libc avrdude
+            - uv sync
+            - task: qmk:sync
+            - task: udev
+            - qmk config user.qmk_home="{{.QMK_HOME}}"
+            - qmk config user.overlay_dir="{{.ROOT_DIR}}"
 
-  udev:
-    desc: Install the QMK udev rules so boards are writable without root.
-    # The script clears any previous rules and helper before installing, so it is
-    # safe to re-run; the guard just avoids the download and sudo prompt.
-    status:
-      - test -f /etc/udev/rules.d/50-qmk.rules
-      - test -x /usr/lib/udev/qmk_id
-    deps:
-      - qmk:sync
-    cmds:
-      - "{{.QMK_HOME}}/util/install_udev.sh"
+    udev:
+        desc: Install the QMK udev rules so boards are writable without root.
+        # The script clears any previous rules and helper before installing, so it is
+        # safe to re-run; the guard just avoids the download and sudo prompt.
+        status:
+            - test -f /etc/udev/rules.d/50-qmk.rules
+            - test -x /usr/lib/udev/qmk_id
+        deps:
+            - qmk:sync
+        cmds:
+            - "{{.QMK_HOME}}/util/install_udev.sh"
 
-  qmk:sync:
-    desc: Put the local QMK tree on the latest tagged release, cloning if absent.
-    # Comparing the checked-out tag rather than mere existence, so a new upstream
-    # release is picked up instead of leaving the tree behind what CI builds.
-    status:
-      - test "$(git -C {{.QMK_HOME}} describe --tags --exact-match 2>/dev/null)" = "$(task --silent qmk:ref)"
-    cmds:
-      # qmk clone runs git clone --recurse-submodules --branch=<ref>, and git
-      # accepts a tag there. QMK publishes no GitHub releases, only version tags.
-      # It refuses a non-empty destination, so a tag bump discards the tree and
-      # starts clean rather than moving an existing one.
-      - |
-        case "{{.QMK_HOME}}" in
-          */.qmk) ;;
-          *) echo "Refusing to remove {{.QMK_HOME}}" >&2; exit 1 ;;
-        esac
-        ref="$(task --silent qmk:ref)"
-        rm -rf "{{.QMK_HOME}}"
-        echo "Cloning QMK ${ref}"
-        qmk clone {{.QMK_FORK}} {{.QMK_HOME}} -b "${ref}"
+    qmk:sync:
+        desc: Put the local QMK tree on the latest tagged release, cloning if absent.
+        # Comparing the checked-out tag rather than mere existence, so a new upstream
+        # release is picked up instead of leaving the tree behind what CI builds.
+        status:
+            - test "$(git -C {{.QMK_HOME}} describe --tags --exact-match 2>/dev/null)" = "$(task --silent qmk:ref)"
+        cmds:
+            # qmk clone runs git clone --recurse-submodules --branch=<ref>, and git
+            # accepts a tag there. QMK publishes no GitHub releases, only version tags.
+            # It refuses a non-empty destination, so a tag bump discards the tree and
+            # starts clean rather than moving an existing one.
+            - |
+                case "{{.QMK_HOME}}" in
+                  */.qmk) ;;
+                  *) echo "Refusing to remove {{.QMK_HOME}}" >&2; exit 1 ;;
+                esac
+                ref="$(task --silent qmk:ref)"
+                rm -rf "{{.QMK_HOME}}"
+                echo "Cloning QMK ${ref}"
+                qmk clone {{.QMK_FORK}} {{.QMK_HOME}} -b "${ref}"
 
-  qmk:ref:
-    desc: Print the latest tagged QMK release.
-    silent: true
-    cmds:
-      - |
-        git ls-remote --tags --refs --sort=-v:refname {{.QMK_REPO}} \
-          | grep -oE 'refs/tags/[0-9]+\.[0-9]+\.[0-9]+$' \
-          | head -n1 \
-          | cut -d/ -f3
+    qmk:ref:
+        desc: Print the latest tagged QMK release.
+        silent: true
+        cmds:
+            - |
+                git ls-remote --tags --refs --sort=-v:refname {{.QMK_REPO}} \
+                  | grep -oE 'refs/tags/[0-9]+\.[0-9]+\.[0-9]+$' \
+                  | head -n1 \
+                  | cut -d/ -f3
 
-  clean:
-    desc: Remove downloaded and compiled firmware.
-    cmds:
-      - rm -rf {{.DIST}}
+    clean:
+        desc: Remove downloaded and compiled firmware.
+        cmds:
+            - rm -rf {{.DIST}}
 
-  compile:sofle:rev1:cenk1cenk2:
-    desc: Compile sofle/rev1 with the cenk1cenk2 keymap.
-    cmds:
-      - task: compile
+    compile:sofle:rev1:cenk1cenk2:
+        desc: Compile sofle/rev1 with the cenk1cenk2 keymap.
+        cmds:
+            - task: compile
+              vars:
+                  KEYBOARD: sofle
+                  REVISION: rev1
+                  KEYMAP: cenk1cenk2
+
+    download:sofle:rev1:cenk1cenk2:
+        desc: Download the latest CI build of sofle/rev1 cenk1cenk2.
+        cmds:
+            - task: download
+              vars:
+                  KEYBOARD: sofle
+                  REVISION: rev1
+                  KEYMAP: cenk1cenk2
+
+    flash:sofle:rev1:cenk1cenk2:
+        desc: Flash sofle/rev1 cenk1cenk2. Run once per half, resetting that half when prompted.
+        cmds:
+            - task: flash
+              vars:
+                  KEYBOARD: sofle
+                  REVISION: rev1
+                  KEYMAP: cenk1cenk2
+
+    compile:
+        internal: true
+        requires:
+            vars:
+                - KEYBOARD
+                - REVISION
+                - KEYMAP
         vars:
-          KEYBOARD: sofle
-          REVISION: rev1
-          KEYMAP: cenk1cenk2
+            FIRMWARE: "{{.KEYBOARD}}_{{.REVISION}}_{{.KEYMAP}}.hex"
+        deps:
+            # Build against the same release CI resolves, rather than whatever the
+            # tree happened to be left on.
+            - qmk:sync
+        cmds:
+            - mkdir -p {{.DIST}}
+            # qmk drops the firmware in the userspace root, per builddefs/common_rules.mk.
+            - qmk compile -kb {{.KEYBOARD}} -km {{.KEYMAP}}
+            - mv {{.FIRMWARE}} {{.DIST}}/{{.FIRMWARE}}
 
-  download:sofle:rev1:cenk1cenk2:
-    desc: Download the latest CI build of sofle/rev1 cenk1cenk2.
-    cmds:
-      - task: download
+    download:
+        internal: true
+        requires:
+            vars:
+                - KEYBOARD
+                - REVISION
+                - KEYMAP
         vars:
-          KEYBOARD: sofle
-          REVISION: rev1
-          KEYMAP: cenk1cenk2
+            FIRMWARE: "{{.KEYBOARD}}_{{.REVISION}}_{{.KEYMAP}}.hex"
+        cmds:
+            - mkdir -p {{.DIST}}
+            - gh release download latest -R {{.REPO}} -p "{{.FIRMWARE}}" -D {{.DIST}} --clobber
 
-  flash:sofle:rev1:cenk1cenk2:
-    desc: Flash sofle/rev1 cenk1cenk2. Run once per half, resetting that half when prompted.
-    cmds:
-      - task: flash
+    flash:
+        internal: true
+        interactive: true
+        requires:
+            vars:
+                - KEYBOARD
+                - REVISION
+                - KEYMAP
         vars:
-          KEYBOARD: sofle
-          REVISION: rev1
-          KEYMAP: cenk1cenk2
-
-  compile:
-    internal: true
-    requires:
-      vars:
-        - KEYBOARD
-        - REVISION
-        - KEYMAP
-    vars:
-      FIRMWARE: "{{.KEYBOARD}}_{{.REVISION}}_{{.KEYMAP}}.hex"
-    deps:
-      # Build against the same release CI resolves, rather than whatever the
-      # tree happened to be left on.
-      - qmk:sync
-    cmds:
-      - mkdir -p {{.DIST}}
-      # qmk drops the firmware in the userspace root, per builddefs/common_rules.mk.
-      - qmk compile -kb {{.KEYBOARD}} -km {{.KEYMAP}}
-      - mv {{.FIRMWARE}} {{.DIST}}/{{.FIRMWARE}}
-
-  download:
-    internal: true
-    requires:
-      vars:
-        - KEYBOARD
-        - REVISION
-        - KEYMAP
-    vars:
-      FIRMWARE: "{{.KEYBOARD}}_{{.REVISION}}_{{.KEYMAP}}.hex"
-    cmds:
-      - mkdir -p {{.DIST}}
-      - gh release download latest -R {{.REPO}} -p "{{.FIRMWARE}}" -D {{.DIST}} --clobber
-
-  flash:
-    internal: true
-    requires:
-      vars:
-        - KEYBOARD
-        - REVISION
-        - KEYMAP
-    vars:
-      FIRMWARE: "{{.KEYBOARD}}_{{.REVISION}}_{{.KEYMAP}}.hex"
-    preconditions:
-      - sh: test -f {{.DIST}}/{{.FIRMWARE}}
-        msg: "{{.DIST}}/{{.FIRMWARE}} not found - run the matching download or compile task first."
-    cmds:
-      - qmk flash {{.DIST}}/{{.FIRMWARE}}
+            FIRMWARE: "{{.KEYBOARD}}_{{.REVISION}}_{{.KEYMAP}}.hex"
+        preconditions:
+            - sh: test -f {{.DIST}}/{{.FIRMWARE}}
+              msg: "{{.DIST}}/{{.FIRMWARE}} not found - run the matching download or compile task first."
+        cmds:
+            - qmk flash {{.DIST}}/{{.FIRMWARE}}
