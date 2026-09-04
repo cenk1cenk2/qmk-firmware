@@ -24,8 +24,21 @@ tasks:
       - yay -S --needed avr-gcc avr-libc avrdude
       - uv sync
       - task: qmk:sync
+      - task: udev
       - qmk config user.qmk_home="{{.QMK_HOME}}"
       - qmk config user.overlay_dir="{{.ROOT_DIR}}"
+
+  udev:
+    desc: Install the QMK udev rules so boards are writable without root.
+    # The script clears any previous rules and helper before installing, so it is
+    # safe to re-run; the guard just avoids the download and sudo prompt.
+    status:
+      - test -f /etc/udev/rules.d/50-qmk.rules
+      - test -x /usr/lib/udev/qmk_id
+    deps:
+      - qmk:sync
+    cmds:
+      - "{{.QMK_HOME}}/util/install_udev.sh"
 
   qmk:sync:
     desc: Put the local QMK tree on the latest tagged release, cloning if absent.
