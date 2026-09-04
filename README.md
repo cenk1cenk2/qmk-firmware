@@ -14,12 +14,16 @@ qmk.json                              build targets
 
 ## Building
 
-Every push builds against current `qmk/qmk_firmware` master via GitHub Actions
-and publishes the firmware as a release.
+Every push builds against the latest tagged `qmk/qmk_firmware` release via
+GitHub Actions and publishes the firmware as a release named `latest`.
 
-To build locally instead:
+To build and flash locally instead:
 
 ```sh
 task install
-task compile
+task compile:sofle:rev1:cenk1cenk2
+task flash:sofle:rev1:cenk1cenk2
 ```
+
+`task download:sofle:rev1:cenk1cenk2` fetches the CI build instead of compiling.
+Flashing runs once per half, resetting that half when prompted.
