@@ -18,6 +18,10 @@
 
 #define QUICK_TAP_TERM 0
 
+// The peripheral reboots itself if the master goes quiet, so reflashing one half
+// does not need the other power cycled.
+#define SPLIT_WATCHDOG_ENABLE
+
 // FORCE_NKRO was removed from QMK; this sets the EEPROM default instead.
 #define NKRO_DEFAULT_ON true
 
