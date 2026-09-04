@@ -20,7 +20,7 @@ KC_TRNS,            KC_LCBR,              KC_RCBR,              KC_UNDS,        
 [_RAISE]  = LAYOUT(
 KC_TRNS,            KC_NO,                KC_NO,                KC_NO,              KC_NO,               KC_NO,                                                         KC_NO,               KC_NO,              KC_NO,                KC_NO,              KC_NO,               KC_NO,
 KC_TRNS,            KC_F1,                KC_F2,                KC_F3,              KC_F4,               KC_NO,                                                         KC_NO,               LCTL(KC_LEFT),      KC_UP,                LCTL(KC_RIGHT),     KC_PGUP,             KC_DEL,
-KC_TRNS,            KC_F5,                KC_F6,                KC_F7,              KC_F8,               KC_NO,                                                         KC_NO,               KC_LEFT,            KC_DOWN,              KC_RGHT,            KC_PGDN,             KC_ENT,
+KC_TRNS,            KC_F5,                KC_F6,                KC_F7,              KC_F8,               QK_LLCK,                                                       KC_NO,               KC_LEFT,            KC_DOWN,              KC_RGHT,            KC_PGDN,             KC_ENT,
 KC_TRNS,            KC_F9,                KC_F10,               KC_F11,             KC_F12,              KC_NO,               KC_TRNS,             KC_TRNS,             KC_PSCR,             KC_HOME,            KC_NO,                KC_END,             KC_NO,               KC_NO,
                     KC_TRNS,              KC_TRNS,              KC_TRNS,            KC_TRNS,             KC_TRNS,                                                       KC_TRNS,             KC_TRNS,            KC_TRNS,              KC_TRNS,            KC_TRNS
 ),
@@ -35,46 +35,18 @@ KC_NO,              UG_HUED,              UG_SATD,              UG_VALD,        
 };
 // clang-format on
 
-#ifdef ENCODER_ENABLE
+#ifdef ENCODER_MAP_ENABLE
 
-bool encoder_update_user(uint8_t index, bool clockwise) {
-    switch (get_highest_layer(layer_state | default_layer_state)) {
-        case _QWERTY:
-            if (index == 0) {
-                if (clockwise) {
-                    tap_code(KC_VOLU);
-                } else {
-                    tap_code(KC_VOLD);
-                }
-            } else if (index == 1) {
-                if (clockwise) {
-                    tap_code(MS_WHLD);
-                } else {
-                    tap_code(MS_WHLU);
-                }
-            }
-            break;
-        case _RAISE:
-            if (index == 0) {
-                if (clockwise) {
-                    tap_code(KC_MNXT);
-                } else {
-                    tap_code(KC_MPRV);
-                }
-            }
-            break;
-        case _LOWER:
-            if (index == 1) {
-                if (clockwise) {
-                    tap_code(MS_WHLR);
-                } else {
-                    tap_code(MS_WHLL);
-                }
-            }
-            break;
-    }
-
-    return false;
-}
+// Volume left, scroll right. Holding raise turns the left knob into track
+// skipping. Transparent entries fall through to the layer below.
+// clang-format off
+const uint16_t PROGMEM encoder_map[][NUM_ENCODERS][NUM_DIRECTIONS] = {
+//                 left encoder                        right encoder
+[_QWERTY] = { ENCODER_CCW_CW(KC_VOLD, KC_VOLU),   ENCODER_CCW_CW(MS_WHLU, MS_WHLD) },
+[_LOWER]  = { ENCODER_CCW_CW(_______, _______),   ENCODER_CCW_CW(_______, _______) },
+[_RAISE]  = { ENCODER_CCW_CW(KC_MPRV, KC_MNXT),   ENCODER_CCW_CW(_______, _______) },
+[_ADJUST] = { ENCODER_CCW_CW(_______, _______),   ENCODER_CCW_CW(_______, _______) },
+};
+// clang-format on
 
 #endif
