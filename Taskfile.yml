@@ -4,9 +4,6 @@
 version: "3"
 
 vars:
-  KEYBOARD: sofle
-  REVISION: rev1
-  KEYMAP: cenk1cenk2
   REPO: cenk1cenk2/qmk-firmware
   DIST: dist
 
@@ -20,8 +17,33 @@ tasks:
       - uv sync
       - qmk config user.overlay_dir="$(pwd)"
 
+  clean:
+    desc: Remove downloaded and compiled firmware.
+    cmds:
+      - rm -rf {{.DIST}}
+
+  compile:sofle:rev1:cenk1cenk2:
+    desc: Compile sofle/rev1 with the cenk1cenk2 keymap.
+    cmds:
+      - task: compile
+        vars: {KEYBOARD: sofle, REVISION: rev1, KEYMAP: cenk1cenk2}
+
+  download:sofle:rev1:cenk1cenk2:
+    desc: Download the latest CI build of sofle/rev1 cenk1cenk2.
+    cmds:
+      - task: download
+        vars: {KEYBOARD: sofle, REVISION: rev1, KEYMAP: cenk1cenk2}
+
+  flash:sofle:rev1:cenk1cenk2:
+    desc: Flash sofle/rev1 cenk1cenk2. Run once per half, resetting that half when prompted.
+    cmds:
+      - task: flash
+        vars: {KEYBOARD: sofle, REVISION: rev1, KEYMAP: cenk1cenk2}
+
   compile:
-    desc: Compile the keyboard/keymap into {{.DIST}}.
+    internal: true
+    requires:
+      vars: [KEYBOARD, REVISION, KEYMAP]
     vars:
       FIRMWARE: "{{.KEYBOARD}}_{{.REVISION}}_{{.KEYMAP}}.hex"
     cmds:
@@ -31,7 +53,9 @@ tasks:
       - mv {{.FIRMWARE}} {{.DIST}}/{{.FIRMWARE}}
 
   download:
-    desc: Download the latest CI-built firmware into {{.DIST}}.
+    internal: true
+    requires:
+      vars: [KEYBOARD, REVISION, KEYMAP]
     vars:
       FIRMWARE: "{{.KEYBOARD}}_{{.REVISION}}_{{.KEYMAP}}.hex"
     cmds:
@@ -39,56 +63,13 @@ tasks:
       - gh release download latest -R {{.REPO}} -p "{{.FIRMWARE}}" -D {{.DIST}} --clobber
 
   flash:
-    desc: Flash the firmware. Run once per half, resetting that half when prompted.
+    internal: true
+    requires:
+      vars: [KEYBOARD, REVISION, KEYMAP]
     vars:
       FIRMWARE: "{{.KEYBOARD}}_{{.REVISION}}_{{.KEYMAP}}.hex"
     preconditions:
       - sh: test -f {{.DIST}}/{{.FIRMWARE}}
-        msg: "{{.DIST}}/{{.FIRMWARE}} not found - run `task download` or `task compile` first."
+        msg: "{{.DIST}}/{{.FIRMWARE}} not found - run the matching download or compile task first."
     cmds:
       - qmk flash {{.DIST}}/{{.FIRMWARE}}
-
-  clean:
-    desc: Remove downloaded and compiled firmware.
-    cmds:
-      - rm -rf {{.DIST}}
-
-  # Variants: task compile:sofle:rev1:cenk1cenk2
-  compile:*:*:*:
-    desc: Compile an explicit keyboard:revision:keymap.
-    vars:
-      KEYBOARD: "{{index .MATCH 0}}"
-      REVISION: "{{index .MATCH 1}}"
-      KEYMAP: "{{index .MATCH 2}}"
-    cmds:
-      - task: compile
-        vars:
-          KEYBOARD: "{{.KEYBOARD}}"
-          REVISION: "{{.REVISION}}"
-          KEYMAP: "{{.KEYMAP}}"
-
-  download:*:*:*:
-    desc: Download an explicit keyboard:revision:keymap.
-    vars:
-      KEYBOARD: "{{index .MATCH 0}}"
-      REVISION: "{{index .MATCH 1}}"
-      KEYMAP: "{{index .MATCH 2}}"
-    cmds:
-      - task: download
-        vars:
-          KEYBOARD: "{{.KEYBOARD}}"
-          REVISION: "{{.REVISION}}"
-          KEYMAP: "{{.KEYMAP}}"
-
-  flash:*:*:*:
-    desc: Flash an explicit keyboard:revision:keymap.
-    vars:
-      KEYBOARD: "{{index .MATCH 0}}"
-      REVISION: "{{index .MATCH 1}}"
-      KEYMAP: "{{index .MATCH 2}}"
-    cmds:
-      - task: flash
-        vars:
-          KEYBOARD: "{{.KEYBOARD}}"
-          REVISION: "{{.REVISION}}"
-          KEYMAP: "{{.KEYMAP}}"
